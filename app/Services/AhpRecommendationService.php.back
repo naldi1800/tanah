@@ -1,0 +1,177 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Tanah;
+use App\Models\JenisTanah;
+use Illuminate\Support\Collection;
+
+class AhpRecommendationService
+{
+    protected AhpService $ahpService;
+    protected Collection $records;
+    protected array $scores = [];
+    protected array $criteriaWeights = [];
+
+    public function __construct(AhpService $ahpService)
+    {
+        $this->ahpService = $ahpService;
+        $this->criteriaWeights = $this->resolveWeights();
+    }
+
+    public function resolveWeights(): array
+    {
+        $weights = $this->ahpService->weights();
+        $criteria = $this->ahpService->report()['criteria'];
+
+        return array_combine($criteria, $weights) ?: [];
+    }
+
+    public function loadRecords(): self
+    {
+        $this->records = Tanah::with('jenisTanah')->get();
+
+        return $this;
+    }
+
+    public function groupedByStreet(): Collection
+    {
+        return $this->records->groupBy(function (Tanah $tanah) {
+            return $this->streetName($tanah->Alamat);
+        });
+    }
+
+    protected function streetName(string $alamat): string
+    {
+        $part = preg_split('/\s+No\.?\s*/i', $alamat, 2);
+
+        return trim($part[0]);
+    }
+
+    public function streetStatistics(): Collection
+    {
+        return $this->groupedByStreet()->map(function (Collection $group, string $street) {
+            $dominantJenis = $this->calcDominantJenis($group);
+
+            return [
+                'street' => $street,
+                'count' => $group->count(),
+                'jenis_dominan' => $dominantJenis,
+                'avg_ph' => $group->avg('PH_Tanah'),
+                'avg_kelembapan' => $group->avg('Kelembaban_Tanah'),
+                'avg_suhu' => $group->avg('Suhu_Tanah'),
+                'avg_ketinggian' => $group->avg('Ketinggian_Tanah'),
+            ];
+        })->values();
+    }
+
+    protected function calcDominantJenis(Collection $group): ?string
+    {
+        return $group
+            ->pluck('jenisTanah')
+            ->filter()
+            ->pluck('jenis')
+            ->countBy()
+            ->sortDesc()
+            ->keys()
+            ->first();
+    }
+
+    public function jenisScore(string $jenis): int
+    {
+        return match ($jenis) {
+            'Andosol'   => 5,
+            'Latosol'   => 4,
+            'Mediteran' => 3,
+            default     => 1,
+        };
+    }
+
+    public function phScore(float $value): int
+    {
+        return match (true) {
+            $value >= 6.0 && $value <= 7.0 => 5,
+            ($value >= 5.5 && $value <= 5.9) || ($value >= 7.1 && $value <= 7.5) => 4,
+            ($value >= 5.0 && $value <= 5.4) || ($value >= 7.6 && $value <= 8.0) => 3,
+            $value >= 4.5 && $value <= 4.9 => 2,
+            default => 1,
+        };
+    }
+
+    public function kelembapanScore(float $value): int
+    {
+        return match (true) {
+            $value >= 60 && $value <= 70 => 5,
+            ($value >= 55 && $value <= 59) || ($value >= 71 && $value <= 75) => 4,
+            ($value >= 50 && $value <= 54) || ($value >= 76 && $value <= 80) => 3,
+            $value >= 45 && $value <= 49 => 2,
+            default => 1,
+        };
+    }
+
+    public function suhuScore(float $value): int
+    {
+        return match (true) {
+            $value >= 25 && $value <= 30 => 5,
+            ($value >= 23 && $value <= 24) || ($value >= 31 && $value <= 32) => 4,
+            ($value >= 21 && $value <= 22) || ($value >= 33 && $value <= 34) => 3,
+            $value >= 19 && $value <= 20 => 2,
+            default => 1,
+        };
+    }
+
+    public function ketinggianScore(float $value): int
+    {
+        return match (true) {
+            $value >= 700 && $value <= 2000 => 5,
+            $value >= 500 && $value <= 699 => 4,
+            $value >= 300 && $value <= 499 => 3,
+            $value >= 100 && $value <= 299 => 2,
+            default => 1,
+        };
+    }
+
+    public function evaluateStreet(array $stats): array
+    {
+        $jenis = $stats['jenis_dominan'] ?? null;
+        $jenisScore = $this->jenisScore($jenis ?: '');
+        $phScore = $this->phScore((float) $stats['avg_ph']);
+        $kelembapanScore = $this->kelembapanScore((float) $stats['avg_kelembapan']);
+        $suhuScore = $this->suhuScore((float) $stats['avg_suhu']);
+        $ketinggianScore = $this->ketinggianScore((float) $stats['avg_ketinggian']);
+
+        $score = (
+            ($this->criteriaWeights['Jenis Tanah'] ?? 0.0) * $jenisScore +
+            ($this->criteriaWeights['pH Tanah'] ?? 0.0) * $phScore +
+            ($this->criteriaWeights['Kelembapan'] ?? 0.0) * $kelembapanScore +
+            ($this->criteriaWeights['Suhu'] ?? 0.0) * $suhuScore +
+            ($this->criteriaWeights['Ketinggian'] ?? 0.0) * $ketinggianScore
+        );
+
+        return array_merge($stats, [
+            'jenis_score' => $jenisScore,
+            'ph_score' => $phScore,
+            'kelembapan_score' => $kelembapanScore,
+            'suhu_score' => $suhuScore,
+            'ketinggian_score' => $ketinggianScore,
+            'total_score' => round($score, 4),
+        ]);
+    }
+
+    public function evaluatedStreets(): Collection
+    {
+        return $this->streetStatistics()
+            ->map(fn (array $stats) => $this->evaluateStreet($stats))
+            ->sortByDesc('total_score')
+            ->values();
+    }
+
+    public function recommendationReport(): array
+    {
+        return [
+            'criteria_weights' => $this->criteriaWeights,
+            'street_statistics' => $this->streetStatistics(),
+            'evaluated_streets' => $this->evaluatedStreets(),
+        ];
+    }
+}

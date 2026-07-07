@@ -1,0 +1,228 @@
+@php
+    $report = $report ?? [];
+    $recommendation = $recommendation ?? [];
+    $criteria = $report['criteria'] ?? [];
+    $columnSums = $report['columnSums'] ?? [];
+    $normalized = $report['normalized'] ?? [];
+    $priorityVector = $report['priorityVector'] ?? [];
+    $weights = $report['weights'] ?? [];
+    $lambdaMax = $report['lambdaMax'] ?? 0;
+    $ci = $report['ci'] ?? 0;
+    $cr = $report['cr'] ?? 0;
+    $status = $report['status'] ?? 'Tidak diketahui';
+@endphp
+
+<x-layouts::app :title="__('AHP Proses')">
+    <div class="min-h-screen bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-sm p-6 rounded-3xl">
+        <div class="max-w-7xl mx-auto space-y-6">
+            <div class="flex items-start justify-between gap-4 mb-8">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 bg-violet-100 dark:bg-violet-900 rounded-lg">
+                            <flux:icon name="chart-bar" class="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <div>
+                            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">AHP Proses</h1>
+                            <p class="text-gray-600 dark:text-gray-400">Perhitungan bobot kriteria dan ranking jalan berdasarkan data lapangan.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <flux:button
+                    href="{{ url()->previous() !== url()->current() ? url()->previous() : route('dashboard') }}"
+                    variant="ghost"
+                    icon="arrow-left"
+                >
+                    Kembali
+                </flux:button>
+            </div>
+
+            <div class="grid gap-6">
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Data Tanah</h2>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Seluruh data tanah digunakan untuk menilai alternatif jalan berdasarkan rerata dan modus.</p>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/60">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Alamat</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Jenis Tanah</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">pH</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Kelembapan</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Suhu</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Ketinggian</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach (App\Models\Tanah::with('jenisTanah')->get() as $tanah)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $tanah->Alamat }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $tanah->jenisTanah?->jenis ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->PH_Tanah, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Kelembaban_Tanah, 2) }}%</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Suhu_Tanah, 2) }}°C</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Ketinggian_Tanah, 2) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Matriks Perbandingan Kriteria</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/60">
+                            <tr>
+                                <th class="px-4 py-3"></th>
+                                @foreach ($criteria as $criterion)
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{{ $criterion }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach ($report['matrix'] as $rowIndex => $row)
+                                <tr>
+                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ $criteria[$rowIndex] }}</td>
+                                    @foreach ($row as $value)
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($value, 4) }}</td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Jumlah Kolom</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/60">
+                            <tr>
+                                @foreach ($criteria as $criterion)
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{{ $criterion }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800">
+                            <tr>
+                                @foreach ($columnSums as $sum)
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($sum, 4) }}</td>
+                                @endforeach
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Matriks Normalisasi</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/60">
+                            <tr>
+                                <th class="px-4 py-3"></th>
+                                @foreach ($criteria as $criterion)
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{{ $criterion }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach ($normalized as $rowIndex => $row)
+                                <tr>
+                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ $criteria[$rowIndex] }}</td>
+                                    @foreach ($row as $value)
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($value, 4) }}</td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Priority Vector & Bobot Kriteria</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/60">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Kriteria</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Priority Vector</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Bobot</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach ($criteria as $index => $criterion)
+                                <tr>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $criterion }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($priorityVector[$index] ?? 0, 4) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($weights[$index] ?? 0, 4) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">λmax, CI, CR</h2>
+                <div class="mt-4 grid gap-4 md:grid-cols-4">
+                    <div class="rounded-3xl bg-gray-50 dark:bg-gray-700/50 p-4">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">λmax</p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($lambdaMax, 4) }}</p>
+                    </div>
+                    <div class="rounded-3xl bg-gray-50 dark:bg-gray-700/50 p-4">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">CI</p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($ci, 4) }}</p>
+                    </div>
+                    <div class="rounded-3xl bg-gray-50 dark:bg-gray-700/50 p-4">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">CR</p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($cr, 4) }}</p>
+                    </div>
+                    <div class="rounded-3xl bg-emerald-50 dark:bg-emerald-900/30 p-4">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ $status }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Tabel Skor Alternatif & Ranking Jalan</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/60">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Jalan</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Jenis Dominan</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Jenis</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor pH</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Kelembapan</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Suhu</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Ketinggian</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Total Skor</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach ($recommendation['evaluated_streets']->take(5) ?? [] as $stats)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ $stats['street'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['jenis_dominan'] ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['jenis_score'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['ph_score'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['kelembapan_score'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['suhu_score'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['ketinggian_score'] }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">{{ number_format($stats['total_score'], 4) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            </div>
+        </div>
+    </div>
+</x-layouts::app>
