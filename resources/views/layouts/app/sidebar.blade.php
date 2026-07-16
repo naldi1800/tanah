@@ -23,8 +23,23 @@
                     <flux:sidebar.item icon="globe-asia-australia" :href="route('tanah.index')" :current="request()->routeIs('tanah.index')" wire:navigate>
                         {{ __('Tanah') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="chart-bar" :href="route('ahp.index')" :current="request()->routeIs('ahp.index')" wire:navigate>
-                        {{ __('AHP Proses') }}
+                </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('AHP')" class="grid">
+                    <flux:sidebar.item icon="document-text" :href="route('ahp.criteria-data')" :current="request()->routeIs('ahp.criteria-data')" wire:navigate>
+                        {{ __('Data Kriteria') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-text" :href="route('ahp.alternative-data')" :current="request()->routeIs('ahp.alternative-data')" wire:navigate>
+                        {{ __('Data Alternatif') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar" :href="route('ahp.criteria-analysis')" :current="request()->routeIs('ahp.criteria-analysis')" wire:navigate>
+                        {{ __('Analisis Kriteria') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar" :href="route('ahp.alternative-analysis')" :current="request()->routeIs('ahp.alternative-analysis')" wire:navigate>
+                        {{ __('Analisis Alternatif') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar" :href="route('ahp.calculation-result')" :current="request()->routeIs('ahp.calculation-result')" wire:navigate>
+                        {{ __('Perhitungan') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 
