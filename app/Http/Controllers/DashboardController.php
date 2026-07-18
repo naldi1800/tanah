@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tanah;
 use App\Models\JenisTanah;
+use App\Services\AhpConfigService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -13,10 +14,10 @@ class DashboardController extends Controller
         $tanahCount = Tanah::count();
         $jenisTanahCount = JenisTanah::count();
         
-        // For AHP, criteria and alternatives are typically stored in session or config
-        // Let's get them from the AHP config service if available
-        $criteriaCount = 0;
-        $alternativesCount = $tanahCount; // Alternatives are the land data
+        // Get criteria and alternatives from AHP Config Service
+        $configService = new AhpConfigService();
+        $criteriaCount = count($configService->getCriteria());
+        $alternativesCount = $configService->getAlternatives()->count();
         
         return view('dashboard', compact('tanahCount', 'jenisTanahCount', 'criteriaCount', 'alternativesCount'));
     }

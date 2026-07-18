@@ -86,7 +86,7 @@
                                     {{ $result['street'] ?? 'Unknown' }}
                                 </h3>
                                 <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-full" style="width: {{ $percentage }}%;"></div>
+                                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-full" @style(["width: {$percentage}%"])></div>
                                 </div>
                                 <div class="mt-1 text-sm text-gray-600 dark:text-gray-400 flex justify-between">
                                     <span>Skor: {{ number_format($score, 4) }}/5</span>
