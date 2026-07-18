@@ -10,8 +10,8 @@ use Livewire\Attributes\Computed;
 
 class AlternativeAnalysis extends Component
 {
-    protected AhpConfigService $configService;
-    protected AhpSessionService $sessionService;
+    protected ?AhpConfigService $configService = null;
+    protected ?AhpSessionService $sessionService = null;
 
     public string $selectedCriterion = '';
     public bool $showModal = false;
@@ -20,19 +20,26 @@ class AlternativeAnalysis extends Component
     public ?string $selectedScale = null;
     public string $search = '';
 
+    protected function getConfigService(): AhpConfigService
+    {
+        return $this->configService ??= new AhpConfigService();
+    }
+
+    protected function getSessionService(): AhpSessionService
+    {
+        return $this->sessionService ??= new AhpSessionService($this->getConfigService());
+    }
+
     public function mount()
     {
-        $this->configService = new AhpConfigService();
-        $this->sessionService = new AhpSessionService($this->configService);
-
         // Initialize session dengan default data untuk alternatif
-        if (empty($this->sessionService->getAlternativesMatrix())) {
-            $this->sessionService->resetAlternativesMatrix();
+        if (empty($this->getSessionService()->getAlternativesMatrix())) {
+            $this->getSessionService()->resetAlternativesMatrix();
         }
 
         // Set default criterion
         if (empty($this->selectedCriterion)) {
-            $criteria = $this->configService->getCriteria();
+            $criteria = $this->getConfigService()->getCriteria();
             $this->selectedCriterion = $criteria[0] ?? '';
         }
     }
@@ -40,25 +47,25 @@ class AlternativeAnalysis extends Component
     #[Computed]
     public function criteria()
     {
-        return $this->configService->getCriteria();
+        return $this->getConfigService()->getCriteria();
     }
 
     #[Computed]
     public function alternatives()
     {
-        return $this->configService->getAlternativesWithIndex();
+        return $this->getConfigService()->getAlternativesWithIndex();
     }
 
     #[Computed]
     public function pairwiseMatrix()
     {
-        return $this->sessionService->getAlternativesMatrixByCriteria($this->selectedCriterion);
+        return $this->getSessionService()->getAlternativesMatrixByCriteria($this->selectedCriterion);
     }
 
     #[Computed]
     public function alternativesList()
     {
-        $list = $this->configService->getAlternatives()->toArray();
+        $list = $this->getConfigService()->getAlternatives()->toArray();
 
         if (empty($this->search)) {
             return $list;
@@ -72,7 +79,7 @@ class AlternativeAnalysis extends Component
     #[Computed]
     public function ahpService()
     {
-        $alternatives = $this->configService->getAlternatives()->toArray();
+        $alternatives = $this->getConfigService()->getAlternatives()->toArray();
         return new AhpService($alternatives, $this->pairwiseMatrix(), 1.12);
     }
 
@@ -103,7 +110,7 @@ class AlternativeAnalysis extends Component
     #[Computed]
     public function saatySaleOptions()
     {
-        return $this->configService->getSaatySaleOptions();
+        return $this->getConfigService()->getSaatySaleOptions();
     }
 
     #[Computed]
@@ -147,13 +154,11 @@ class AlternativeAnalysis extends Component
     public function openModal(): void
     {
         $this->showModal = true;
-        $this->dispatch('open-alternative-modal');
     }
 
     public function closeModal(): void
     {
         $this->showModal = false;
-        $this->dispatch('close-alternative-modal');
         $this->resetModalForm();
     }
 
@@ -170,7 +175,7 @@ class AlternativeAnalysis extends Component
             return;
         }
 
-        $alternatives = $this->configService->getAlternatives()->toArray();
+        $alternatives = $this->getConfigService()->getAlternatives()->toArray();
         $row = array_search($this->selectedAlternative1, $alternatives, true);
         $col = array_search($this->selectedAlternative2, $alternatives, true);
 
@@ -178,8 +183,8 @@ class AlternativeAnalysis extends Component
             return;
         }
 
-        $value = $this->configService->scaleToNumeric($this->selectedScale);
-        $this->sessionService->updateAlternativeValue($this->selectedCriterion, $row, $col, $value);
+        $value = $this->getConfigService()->scaleToNumeric($this->selectedScale);
+        $this->getSessionService()->updateAlternativeValue($this->selectedCriterion, $row, $col, $value);
 
         $this->closeModal();
         $this->dispatch('notify', message: 'Nilai pairwise berhasil diperbarui');
@@ -187,14 +192,14 @@ class AlternativeAnalysis extends Component
 
     public function resetToDefault(): void
     {
-        $this->sessionService->resetAlternativesMatrix();
-        $this->dispatch('notify', message: 'Nilai pairwise direset ke default');
+        $this->getSessionService()->forceResetForNewScoring();
+        $this->dispatch('notify', message: 'Nilai pairwise direset ke default dengan skor kesesuaian baru');
     }
 
     public function render()
     {
         return view('livewire.ahp.alternative-analysis', [
-            'configService' => $this->configService,
+            'configService' => $this->getConfigService(),
             'criteria' => $this->criteria(),
             'alternatives' => $this->alternativesList(),
             'pairwiseMatrix' => $this->pairwiseMatrix(),

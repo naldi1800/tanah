@@ -12,11 +12,25 @@ class AhpRecommendationService
     protected Collection $records;
     protected array $scores = [];
     protected array $criteriaWeights = [];
+    protected ?AhpConfigService $configService = null;
+    protected ?LandSuitabilityService $suitabilityService = null;
 
-    public function __construct(AhpService $ahpService)
+    public function __construct(AhpService $ahpService, ?AhpConfigService $configService = null, ?LandSuitabilityService $suitabilityService = null)
     {
         $this->ahpService = $ahpService;
+        $this->configService = $configService ?? new AhpConfigService();
+        $this->suitabilityService = $suitabilityService ?? new LandSuitabilityService($this->configService);
         $this->criteriaWeights = $this->resolveWeights();
+    }
+
+    protected function getConfigService(): AhpConfigService
+    {
+        return $this->configService ??= new AhpConfigService();
+    }
+
+    protected function getSuitabilityService(): LandSuitabilityService
+    {
+        return $this->suitabilityService ??= new LandSuitabilityService($this->getConfigService());
     }
 
     public function resolveWeights(): array
@@ -37,40 +51,27 @@ class AhpRecommendationService
     public function groupedByStreet(): Collection
     {
         return $this->records->groupBy(function (Tanah $tanah) {
-            return $this->streetName($tanah->Alamat);
+            return $this->getConfigService()->extractStreetName($tanah->Alamat);
         });
     }
 
     protected function streetName(string $alamat): string
     {
-        // split by common 'No' patterns first
-        $part = preg_split('/\s+No\.?\s*/i', $alamat, 2);
-        $base = trim($part[0]);
-
-        // remove trailing numeric or unit suffixes (e.g., 'Jl. Kopi 1' -> 'Jl. Kopi')
-        $base = preg_replace('/[\s,;:-]*\b(?:No\.?|no\.?|\d+|[IVXLC]+)\b.*$/i', '', $base);
-        // remove any trailing standalone numbers
-        $base = preg_replace('/\s+\d+$/', '', $base);
-        $base = preg_replace('/\s+\d+\/\d+$/', '', $base);
-
-        return trim($base);
+        return $this->getConfigService()->extractStreetName($alamat);
     }
 
     public function streetStatistics(): Collection
     {
-        return $this->groupedByStreet()->map(function (Collection $group, string $street) {
-            $dominant = $this->calcDominantJenis($group);
+        // Gunakan data agregasi dari AhpConfigService untuk konsistensi
+        $aggregatedData = $this->getConfigService()->getAlternativesWithAggregatedData();
 
-            return [
-                'street' => $street,
-                'count' => $group->count(),
-                'jenis_dominan' => $dominant['jenis'] ?? null,
-                'jenis_dominan_id' => $dominant['id'] ?? null,
-                'avg_ph' => $group->avg('PH_Tanah'),
-                'avg_kelembapan' => $group->avg('Kelembaban_Tanah'),
-                'avg_suhu' => $group->avg('Suhu_Tanah'),
-                'avg_ketinggian' => $group->avg('Ketinggian_Tanah'),
-            ];
+        // Tambahkan count untuk backward compatibility
+        return $aggregatedData->map(function (array $data) {
+            return array_merge($data, [
+                'count' => $this->records->filter(function (Tanah $tanah) use ($data) {
+                    return $this->getConfigService()->extractStreetName($tanah->Alamat) === $data['street'];
+                })->count(),
+            ]);
         })->values();
     }
 
@@ -197,7 +198,7 @@ class AhpRecommendationService
     public function evaluatedStreets(): Collection
     {
         return $this->streetStatistics()
-            ->map(fn (array $stats) => $this->evaluateStreet($stats))
+            ->map(fn(array $stats) => $this->evaluateStreet($stats))
             ->sortByDesc('total_score')
             ->values();
     }
@@ -236,7 +237,6 @@ class AhpRecommendationService
                 'values' => $values,
                 'matrix' => $matrix,
                 'raw_matrix' => $this->buildRawFromNumeric($matrix),
-                'matrix' => $matrix,
                 'report' => $report,
             ];
         }
@@ -285,14 +285,8 @@ class AhpRecommendationService
         $n = count($values);
         $matrix = array_fill(0, $n, array_fill(0, $n, 1.0));
 
-        // Slight bias: emphasize street 1, then 2, then 3 according to user's hint (50:30:20)
-        // We'll multiply raw values by a bias factor based on index (0-based)
-        $bias = array_map(fn($i) => match ($i) {
-            0 => 1.2,
-            1 => 1.1,
-            2 => 1.05,
-            default => 1.0,
-        }, array_keys($values));
+        // Removed bias - now using suitability scores directly without artificial preference
+        // The scores themselves reflect the actual suitability of each alternative
 
         for ($i = 0; $i < $n; $i++) {
             for ($j = 0; $j < $n; $j++) {
@@ -301,11 +295,16 @@ class AhpRecommendationService
                     continue;
                 }
 
-                $vi = $values[$i] * $bias[$i];
-                $vj = $values[$j] * $bias[$j];
+                $vi = $values[$i];
+                $vj = $values[$j];
 
-                // ratio
-                $ratio = $vj !== 0 ? $vi / $vj : 1.0;
+                // ratio - handle zero values
+                if (abs($vj) < 0.0001) {
+                    // If both are zero or very small, treat as equal
+                    $ratio = abs($vi) < 0.0001 ? 1.0 : 9.0;
+                } else {
+                    $ratio = $vi / $vj;
+                }
 
                 // map ratio to AHP scale 1/9..9 using log scale
                 $mapped = $this->ratioToAHP($ratio);
@@ -322,10 +321,30 @@ class AhpRecommendationService
     {
         if ($ratio == 1.0) return 1.0;
 
+        // Handle zero or very small ratios
+        if ($ratio == 0.0 || abs($ratio) < 0.0001) {
+            return 1.0; // Treat as equal preference
+        }
+
+        // Handle negative ratios (shouldn't happen but protect anyway)
+        if ($ratio < 0) {
+            return 1.0;
+        }
+
         // Use log2 to compress the ratio, then map to 1..9
         $sign = $ratio > 1 ? 1 : -1;
-        $r = $ratio > 1 ? $ratio : 1 / $ratio;
-        $scale = log($r, 2); // how many doublings
+        $r = $ratio > 1 ? $ratio : 1 / max($ratio, 0.0001); // Prevent division by zero
+
+        // Additional safety for log calculation
+        if ($r <= 0) {
+            return 1.0;
+        }
+
+        try {
+            $scale = log($r, 2); // how many doublings
+        } catch (\Exception $e) {
+            return 1.0; // Fallback on any log error
+        }
 
         // each step ~1.5 on AHP scale, cap between 1 and 9
         $value = 1 + min(8, round($scale * 2));
@@ -367,5 +386,59 @@ class AhpRecommendationService
         $ri = [1 => 0.00, 2 => 0.00, 3 => 0.58, 4 => 0.90, 5 => 1.12, 6 => 1.24, 7 => 1.32, 8 => 1.41, 9 => 1.45, 10 => 1.49];
 
         return $ri[$n] ?? 1.49;
+    }
+    /**
+     * Menghasilkan seluruh pairwise matrix default alternatif
+     * berdasarkan skor kesesuaian lahan (bukan nilai mentah).
+     *
+     * Return:
+     * [
+     *     'Jenis Tanah' => [...matrix...],
+     *     'pH Tanah' => [...matrix...],
+     *     ...
+     * ]
+     */
+    public function getDefaultAlternativeMatrices(): array
+    {
+        if ($this->records->isEmpty()) {
+            $this->loadRecords();
+        }
+
+        // Gunakan skor kesesuaian dari LandSuitabilityService
+        $suitabilityData = $this->getSuitabilityService()->getAlternativesWithSuitabilityScores();
+
+        $matrices = [];
+
+        foreach (array_keys($this->criteriaWeights) as $criterion) {
+            $values = $suitabilityData->map(function ($item) use ($criterion) {
+                return match ($criterion) {
+                    'Jenis Tanah' => $item['soil_suitability_score'],
+                    'pH Tanah' => $item['ph_suitability_score'],
+                    'Kelembapan' => $item['humidity_suitability_score'],
+                    'Suhu' => $item['temperature_suitability_score'],
+                    'Ketinggian' => $item['altitude_suitability_score'],
+                    default => 0,
+                };
+            })->toArray();
+
+            $matrices[$criterion] = $this->buildPairwiseMatrix($values);
+        }
+
+        return $matrices;
+    }
+
+    /**
+     * Mengambil daftar alternatif (nama jalan)
+     */
+    public function getAlternativeLabels(): array
+    {
+        if ($this->records->isEmpty()) {
+            $this->loadRecords();
+        }
+
+        return $this->getConfigService()
+            ->getAlternatives()
+            ->values()
+            ->toArray();
     }
 }

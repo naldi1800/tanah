@@ -10,8 +10,8 @@ use Livewire\Attributes\Computed;
 
 class CriteriaAnalysis extends Component
 {
-    protected AhpConfigService $configService;
-    protected AhpSessionService $sessionService;
+    protected ?AhpConfigService $configService = null;
+    protected ?AhpSessionService $sessionService = null;
 
     public bool $showModal = false;
     public ?string $selectedCriteria1 = null;
@@ -19,22 +19,30 @@ class CriteriaAnalysis extends Component
     public ?string $selectedScale = null;
     public string $search = '';
 
+    protected function getConfigService(): AhpConfigService
+    {
+        return $this->configService ??= new AhpConfigService();
+    }
+
+    protected function getSessionService(): AhpSessionService
+    {
+        return $this->sessionService ??= new AhpSessionService($this->getConfigService());
+    }
+
     public function mount()
     {
-        $this->configService = new AhpConfigService();
-        $this->sessionService = new AhpSessionService($this->configService);
     }
 
     #[Computed]
     public function criteria()
     {
-        return $this->configService->getCriteria();
+        return $this->getConfigService()->getCriteria();
     }
 
     #[Computed]
     public function pairwiseMatrix()
     {
-        return $this->sessionService->getCriteriaMatrix();
+        return $this->getSessionService()->getCriteriaMatrix();
     }
 
     #[Computed]
@@ -94,7 +102,7 @@ class CriteriaAnalysis extends Component
     #[Computed]
     public function saatySaleOptions()
     {
-        return $this->configService->getSaatySaleOptions();
+        return $this->getConfigService()->getSaatySaleOptions();
     }
 
     #[Computed]
@@ -132,13 +140,11 @@ class CriteriaAnalysis extends Component
     public function openModal(): void
     {
         $this->showModal = true;
-        $this->dispatch('open-criteria-modal');
     }
 
     public function closeModal(): void
     {
         $this->showModal = false;
-        $this->dispatch('close-criteria-modal');
         $this->resetModalForm();
     }
 
@@ -155,15 +161,15 @@ class CriteriaAnalysis extends Component
             return;
         }
 
-        $row = $this->configService->getCriteriaIndex($this->selectedCriteria1);
-        $col = $this->configService->getCriteriaIndex($this->selectedCriteria2);
+        $row = $this->getConfigService()->getCriteriaIndex($this->selectedCriteria1);
+        $col = $this->getConfigService()->getCriteriaIndex($this->selectedCriteria2);
 
         if ($row === null || $col === null) {
             return;
         }
 
-        $value = $this->configService->scaleToNumeric($this->selectedScale);
-        $this->sessionService->updateCriteriaValue($row, $col, $value);
+        $value = $this->getConfigService()->scaleToNumeric($this->selectedScale);
+        $this->getSessionService()->updateCriteriaValue($row, $col, $value);
 
         $this->closeModal();
         $this->dispatch('notify', message: 'Nilai pairwise berhasil diperbarui');
@@ -171,14 +177,14 @@ class CriteriaAnalysis extends Component
 
     public function resetToDefault(): void
     {
-        $this->sessionService->resetCriteriaMatrix();
-        $this->dispatch('notify', message: 'Nilai pairwise direset ke default');
+        $this->getSessionService()->forceResetForNewScoring();
+        $this->dispatch('notify', message: 'Nilai pairwise direset ke default dengan skor kesesuaian baru');
     }
 
     public function render()
     {
         return view('livewire.ahp.criteria-analysis', [
-            'configService' => $this->configService,
+            'configService' => $this->getConfigService(),
             'criteria' => $this->criteria(),
             'pairwiseMatrix' => $this->pairwiseMatrix(),
             'columnSums' => $this->columnSums(),

@@ -11,25 +11,33 @@ use Livewire\Attributes\Computed;
 
 class CalculationResult extends Component
 {
-    protected AhpConfigService $configService;
-    protected AhpSessionService $sessionService;
+    protected ?AhpConfigService $configService = null;
+    protected ?AhpSessionService $sessionService = null;
+
+    protected function getConfigService(): AhpConfigService
+    {
+        return $this->configService ??= new AhpConfigService();
+    }
+
+    protected function getSessionService(): AhpSessionService
+    {
+        return $this->sessionService ??= new AhpSessionService($this->getConfigService());
+    }
 
     public function mount()
     {
-        $this->configService = new AhpConfigService();
-        $this->sessionService = new AhpSessionService($this->configService);
     }
 
     #[Computed]
     public function criteria()
     {
-        return $this->configService->getCriteria();
+        return $this->getConfigService()->getCriteria();
     }
 
     #[Computed]
     public function ahpService()
     {
-        $matrix = $this->sessionService->getCriteriaMatrix();
+        $matrix = $this->getSessionService()->getCriteriaMatrix();
         return new AhpService($this->criteria(), $matrix, 1.12);
     }
 
@@ -43,7 +51,8 @@ class CalculationResult extends Component
     public function recommendation()
     {
         $ahp = $this->ahpService();
-        $service = new AhpRecommendationService($ahp);
+        $suitabilityService = new \App\Services\LandSuitabilityService($this->getConfigService());
+        $service = new AhpRecommendationService($ahp, $this->getConfigService(), $suitabilityService);
         $service->loadRecords();
 
         return $service->recommendationReport();
@@ -52,8 +61,14 @@ class CalculationResult extends Component
     #[Computed]
     public function topResults()
     {
-        $results = $this->recommendation()['final_scores'] ?? [];
+        $results = $this->recommendation()['ahp_final_ranking'] ?? [];
         return array_slice($results, 0, 5);
+    }
+
+    public function forceResetSession(): void
+    {
+        $this->getSessionService()->forceResetForNewScoring();
+        $this->dispatch('notify', message: 'Session di-reset untuk menggunakan skor kesesuaian baru');
     }
 
     public function render()

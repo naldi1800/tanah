@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Session;
+use App\Services\AhpRecommendationService;
+use App\Services\AhpService;
 
 /**
  * Service untuk mengelola session pairwise matrix
@@ -16,6 +18,7 @@ class AhpSessionService
     protected const SESSION_KEY_CRITERIA = 'ahp_pairwise_criteria';
     protected const SESSION_KEY_ALTERNATIVES = 'ahp_pairwise_alternatives';
     protected const SESSION_KEY_TIMESTAMP = 'ahp_session_timestamp';
+    protected const SESSION_KEY_DATA_HASH = 'ahp_data_hash'; // Untuk mendeteksi perubahan data
 
     public function __construct(?AhpConfigService $configService = null)
     {
@@ -31,7 +34,30 @@ class AhpSessionService
             $this->resetCriteriaMatrix();
             $this->resetAlternativesMatrix();
             Session::put(self::SESSION_KEY_TIMESTAMP, now()->timestamp);
+            $this->updateDataHash();
         }
+    }
+
+    /**
+     * Update hash data untuk mendeteksi perubahan
+     */
+    protected function updateDataHash(): void
+    {
+        $alternatives = $this->configService->getAlternativesWithAggregatedData();
+        $hash = md5(json_encode($alternatives));
+        Session::put(self::SESSION_KEY_DATA_HASH, $hash);
+    }
+
+    /**
+     * Check apakah data tanah berubah
+     */
+    protected function hasDataChanged(): bool
+    {
+        $currentAlternatives = $this->configService->getAlternativesWithAggregatedData();
+        $currentHash = md5(json_encode($currentAlternatives));
+        $storedHash = Session::get(self::SESSION_KEY_DATA_HASH);
+
+        return $currentHash !== $storedHash;
     }
 
     /**
@@ -64,8 +90,10 @@ class AhpSessionService
     {
         $this->ensureSessionExists();
 
-        if ($this->isSessionExpired()) {
+        if ($this->isSessionExpired() || $this->hasDataChanged()) {
             $this->resetCriteriaMatrix();
+            $this->resetAlternativesMatrix();
+            $this->updateDataHash();
         }
 
         return Session::get(self::SESSION_KEY_CRITERIA, []);
@@ -154,7 +182,7 @@ class AhpSessionService
     public function updateAlternativeValue(string $criteriaName, int $row, int $col, float $value): void
     {
         $matrix = $this->getAlternativesMatrixByCriteria($criteriaName);
-        
+
         if (empty($matrix)) {
             // Initialize matrix jika belum ada
             $alternatives = $this->configService->getAlternatives();
@@ -164,7 +192,7 @@ class AhpSessionService
 
         $matrix[$row][$col] = $value;
         $matrix[$col][$row] = $value !== 0 ? 1 / $value : 0;
-        
+
         $this->setAlternativesMatrixByCriteria($criteriaName, $matrix);
     }
 
@@ -173,17 +201,23 @@ class AhpSessionService
      */
     public function resetAlternativesMatrix(): void
     {
-        $alternatives = $this->configService->getAlternatives();
-        $criteria = $this->configService->getCriteria();
-        
-        $matrices = [];
-        $size = count($alternatives);
+        $recommendation = $this->recommendationService();
 
-        foreach ($criteria as $criterion) {
-            $matrices[$criterion] = array_fill(0, $size, array_fill(0, $size, 1.0));
-        }
+        $this->setAlternativesMatrix(
+            $recommendation->getDefaultAlternativeMatrices()
+        );
 
-        $this->setAlternativesMatrix($matrices);
+        // $alternatives = $this->configService->getAlternatives();
+        // $criteria = $this->configService->getCriteria();
+
+        // $matrices = [];
+        // $size = count($alternatives);
+
+        // foreach ($criteria as $criterion) {
+        //     $matrices[$criterion] = array_fill(0, $size, array_fill(0, $size, 1.0));
+        // }
+
+        // $this->setAlternativesMatrix($matrices);
     }
 
     /**
@@ -195,7 +229,18 @@ class AhpSessionService
             self::SESSION_KEY_CRITERIA,
             self::SESSION_KEY_ALTERNATIVES,
             self::SESSION_KEY_TIMESTAMP,
+            self::SESSION_KEY_DATA_HASH,
         ]);
+    }
+
+    /**
+     * Force reset untuk menggunakan skor kesesuaian baru
+     * Dipanggil ketika ada perubahan signifikan pada sistem scoring
+     */
+    public function forceResetForNewScoring(): void
+    {
+        $this->clearAllSession();
+        $this->ensureSessionExists();
     }
 
     /**
@@ -215,5 +260,23 @@ class AhpSessionService
             'criteria_matrix_set' => Session::has(self::SESSION_KEY_CRITERIA),
             'alternatives_matrix_set' => Session::has(self::SESSION_KEY_ALTERNATIVES),
         ];
+    }
+
+    protected function recommendationService(): AhpRecommendationService
+    {
+        $criteria = $this->configService->getCriteria();
+
+        $matrix = $this->configService->getDefaultPairwiseMatrix();
+
+        $ahp = new AhpService(
+            $criteria,
+            $matrix,
+            1.12
+        );
+
+        $suitabilityService = new \App\Services\LandSuitabilityService($this->configService);
+
+        return (new AhpRecommendationService($ahp, $this->configService, $suitabilityService))
+            ->loadRecords();
     }
 }

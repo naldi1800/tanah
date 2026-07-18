@@ -99,12 +99,58 @@ class AhpConfigService
      */
     public function getAlternatives(): Collection
     {
-        $records = Tanah::all();
+        return $this->getAlternativesWithAggregatedData()->pluck('street')->values();
+    }
+
+    /**
+     * Get alternatif dengan data agregasi lengkap
+     * Return format:
+     * [
+     *     [
+     *         'street' => 'Jln Anggrek',
+     *         'jenis_dominan' => 'Lempung',
+     *         'avg_ph' => 6.77,
+     *         'avg_kelembapan' => 80.33,
+     *         'avg_suhu' => 28.00,
+     *         'avg_ketinggian' => 112.33,
+     *     ],
+     *     ...
+     * ]
+     */
+    public function getAlternativesWithAggregatedData(): Collection
+    {
+        $records = Tanah::with('jenisTanah')->get();
         $grouped = $records->groupBy(function (Tanah $tanah) {
             return $this->extractStreetName($tanah->Alamat);
         });
 
-        return $grouped->keys()->values();
+        return $grouped->map(function (Collection $group, string $street) {
+            return [
+                'street' => $street,
+                'jenis_dominan' => $this->calculateModusJenis($group),
+                'avg_ph' => $group->avg('PH_Tanah'),
+                'avg_kelembapan' => $group->avg('Kelembaban_Tanah'),
+                'avg_suhu' => $group->avg('Suhu_Tanah'),
+                'avg_ketinggian' => $group->avg('Ketinggian_Tanah'),
+            ];
+        })->values();
+    }
+
+    /**
+     * Hitung modus untuk jenis tanah dari group data
+     */
+    protected function calculateModusJenis(Collection $group): ?string
+    {
+        $plucked = $group->pluck('jenisTanah')->filter();
+
+        if ($plucked->isEmpty()) {
+            return null;
+        }
+
+        $countById = $plucked->pluck('id')->countBy();
+        $dominantId = $countById->sortDesc()->keys()->first();
+
+        return $plucked->firstWhere('id', $dominantId)?->jenis ?? null;
     }
 
     /**

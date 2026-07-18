@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-sm p-3 rounded-3xl">
+<div class="min-h-screen bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-sm p-6 rounded-3xl">
     <div class="max-w-7xl mx-auto space-y-6">
         <!-- Header -->
         <div class="flex items-start justify-between gap-4 mb-8">
@@ -198,7 +198,7 @@
         </section>
 
         <!-- Modal for Update -->
-        <flux:modal name="alternative-modal" variant="flyout" class="md:max-w-md">
+        <flux:modal wire:model="showModal" variant="flyout" class="md:max-w-md">
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Ubah Nilai Pairwise</h2>
 
