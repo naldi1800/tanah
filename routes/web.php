@@ -2,11 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use Illuminate\Support\Facades\Auth;
 
-Route::view('/', 'welcome')->name('home');
+
+// Route::view('/', 'welcome')->name('home');
+Route::get('/', function () {
+    return redirect(Auth::check() ? 'dashboard' : 'login');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Volt::route('tanah', 'tanah.index')->name('tanah.index');
     Volt::route('jenis-tanah', 'jenistanah.index')->name('jenistanah.index');
     
