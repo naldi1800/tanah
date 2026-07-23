@@ -17,7 +17,7 @@ new class extends Component {
         'PH_Tanah' => '',
         'Kelembaban_Tanah' => '',
         'Suhu_Tanah' => '',
-        'Ketinggian_Tanah' => '',
+        'drainase' => '',
     ];
 
     public function create(): void
@@ -73,7 +73,7 @@ new class extends Component {
             'form.PH_Tanah' => 'required|numeric',
             'form.Kelembaban_Tanah' => 'required|numeric',
             'form.Suhu_Tanah' => 'required|numeric',
-            'form.Ketinggian_Tanah' => 'required|numeric',
+            'form.drainase' => 'required|in:Baik,Sedang,Buruk',
         ], [
             'form.Alamat.required' => 'Alamat wajib diisi',
             'form.jenis_tanah_id.required' => 'Jenis tanah wajib dipilih',
@@ -84,8 +84,8 @@ new class extends Component {
             'form.Kelembaban_Tanah.numeric' => 'Kelembaban tanah harus angka',
             'form.Suhu_Tanah.required' => 'Suhu tanah wajib diisi',
             'form.Suhu_Tanah.numeric' => 'Suhu tanah harus angka',
-            'form.Ketinggian_Tanah.required' => 'Ketinggian tanah wajib diisi',
-            'form.Ketinggian_Tanah.numeric' => 'Ketinggian tanah harus angka',
+            'form.drainase.required' => 'Drainase wajib dipilih',
+            'form.drainase.in' => 'Drainase harus Baik, Sedang, atau Buruk',
         ])['form'];
 
         if ($this->isEdit && $this->tanahId) {
@@ -141,7 +141,7 @@ new class extends Component {
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">pH</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Kelembaban</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Suhu</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Ketinggian</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Drainase</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Aksi</th>
                             </tr>
                         </thead>
@@ -154,7 +154,7 @@ new class extends Component {
                                     <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->PH_Tanah, 2) }}</td>
                                     <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Kelembaban_Tanah, 0) }}%</td>
                                     <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Suhu_Tanah, 0) }}°C</td>
-                                    <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Ketinggian_Tanah, 0) }} Mdpl</td>
+                                    <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">{{ $tanah->drainase ?? '-' }}</td>
                                     <td class="px-4 py-3 text-center space-x-2">
                                         <flux:button wire:click="edit({{ $tanah->id }})" variant="ghost" size="sm" icon="pencil" title="Edit Data Tanah"></flux:button>
                                         <flux:button wire:click="delete({{ $tanah->id }})" variant="danger" size="sm" icon="trash" title="Hapus Data"></flux:button>

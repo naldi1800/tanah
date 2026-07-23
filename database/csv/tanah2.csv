@@ -1,26 +1,26 @@
 alamat,jenis_tanah_id,PH_Tanah,Kelembaban_Tanah,Suhu_Tanah,Drainase
-Jl. Kopi 1,Andosol,6.2,85,26,Baik
-Jl. Kopi 2,Andosol,6.1,84,27,Baik
-Jl. Kopi 3,Andosol,6.3,86,26,Baik
-Jl. Kopi 4,Andosol,6.4,88,25,Baik
-Jl. Kopi 5,Andosol,"6,0",83,27,Sedang
-Jl. Kopi 6,Andosol,6.5,89,25,Baik
-Jl. Kopi 7,Andosol,6.2,87,26,Baik
-Jl. Tammabili 1,Latosol,5.8,80,28,Sedang
-Jl. Tammabili 2,Latosol,5.9,81,28,Sedang
-Jl. Tammabili 3,Latosol,"6,0",82,27,Baik
-Jl. Tammabili 4,Latosol,5.7,79,29,Sedang
-Jl. Tammabili 5,Latosol,6.1,83,28,Baik
-Jl. Tammabili 6,Latosol,5.9,81,27,Sedang
-Jl. Kayu Taning 1,Mediteran,5.6,76,30,Buruk
-Jl. Kayu Taning 2,Mediteran,5.7,77,30,Sedang
-Jl. Kayu Taning 3,Mediteran,5.8,78,29,Sedang
-Jl. Kayu Taning 4,Mediteran,5.5,75,31,Buruk
-Jl. Kayu Taning 5,Mediteran,5.9,79,29,Sedang
-Jl. Kayu Taning 6,Mediteran,5.7,77,30,Buruk
-Jl. Nasional 1,Andosol,6.4,88,25,Baik
-Jl. Nasional 2,Andosol,6.3,87,26,Baik
-Jl. Nasional 3,Andosol,6.5,89,25,Baik
-Jl. Nasional 4,Andosol,6.2,86,26,Baik
-Jl. Nasional 5,Andosol,6.4,88,25,Baik
-Jl. Nasional 6,Andosol,"6,0",82,27,Sedang
+Jl. Kopi 1,1,6.2,85,26,Baik
+Jl. Kopi 2,1,6.1,84,27,Baik
+Jl. Kopi 3,1,6.3,86,26,Baik
+Jl. Kopi 4,1,6.4,88,25,Baik
+Jl. Kopi 5,1,6.0,83,27,Sedang
+Jl. Kopi 6,1,6.5,89,25,Baik
+Jl. Kopi 7,1,6.2,87,26,Baik
+Jl. Tammabili 1,2,5.8,80,28,Sedang
+Jl. Tammabili 2,2,5.9,81,28,Sedang
+Jl. Tammabili 3,2,6.0,82,27,Baik
+Jl. Tammabili 4,2,5.7,79,29,Sedang
+Jl. Tammabili 5,2,6.1,83,28,Baik
+Jl. Tammabili 6,2,5.9,81,27,Sedang
+Jl. Kayu Taning 1,3,5.6,76,30,Buruk
+Jl. Kayu Taning 2,3,5.7,77,30,Sedang
+Jl. Kayu Taning 3,3,5.8,78,29,Sedang
+Jl. Kayu Taning 4,3,5.5,75,31,Buruk
+Jl. Kayu Taning 5,3,5.9,79,29,Sedang
+Jl. Kayu Taning 6,3,5.7,77,30,Buruk
+Jl. Nasional 1,1,6.4,88,25,Baik
+Jl. Nasional 2,1,6.3,87,26,Baik
+Jl. Nasional 3,1,6.5,89,25,Baik
+Jl. Nasional 4,1,6.2,86,26,Baik
+Jl. Nasional 5,1,6.4,88,25,Baik
+Jl. Nasional 6,1,6.0,82,27,Sedang

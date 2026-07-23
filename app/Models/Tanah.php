@@ -18,7 +18,7 @@ class Tanah extends Model
         'PH_Tanah',
         'Kelembaban_Tanah',
         'Suhu_Tanah',
-        'Ketinggian_Tanah',
+        'drainase',
     ];
 
     public function jenisTanah()

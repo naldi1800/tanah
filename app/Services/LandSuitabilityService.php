@@ -31,11 +31,6 @@ class LandSuitabilityService
             'max' => 35,
             'optimal' => 30, // Tengah rentang
         ],
-        'altitude' => [
-            'min' => 800,
-            'max' => 1800,
-            'optimal' => 1300, // Tengah rentang
-        ],
     ];
 
     /**
@@ -49,6 +44,17 @@ class LandSuitabilityService
         'Lempung' => 60,
         'Pasir' => 30,
         'Liat' => 40,
+        'default' => 20,
+    ];
+
+    /**
+     * Skor untuk drainase (kategorikal)
+     * Berdasarkan tingkat kesesuaian untuk tanaman
+     */
+    protected const DRAINASE_SCORES = [
+        'Baik' => 100,
+        'Sedang' => 60,
+        'Buruk' => 30,
         'default' => 20,
     ];
 
@@ -80,13 +86,13 @@ class LandSuitabilityService
                 'ph_suitability_score' => $this->phSuitabilityScore($data['avg_ph']),
                 'humidity_suitability_score' => $this->humiditySuitabilityScore($data['avg_kelembapan']),
                 'temperature_suitability_score' => $this->temperatureSuitabilityScore($data['avg_suhu']),
-                'altitude_suitability_score' => $this->altitudeSuitabilityScore($data['avg_ketinggian']),
+                'drainase_suitability_score' => $this->drainaseSuitabilityScore($data['drainase_dominan']),
                 // Retain original data for reference
                 'original' => [
                     'avg_ph' => $data['avg_ph'],
                     'avg_kelembapan' => $data['avg_kelembapan'],
                     'avg_suhu' => $data['avg_suhu'],
-                    'avg_ketinggian' => $data['avg_ketinggian'],
+                    'drainase_dominan' => $data['drainase_dominan'],
                 ],
             ];
         })->values();
@@ -202,38 +208,18 @@ class LandSuitabilityService
     }
 
     /**
-     * Hitung skor kesesuaian ketinggian
-     * Menggunakan fungsi trapezoidal untuk transisi halus
+     * Hitung skor kesesuaian drainase
      * 
-     * @param float $altitudeValue Nilai ketinggian (mdpl)
-     * @return float Skor 0-100
+     * @param string|null $drainase Nilai drainase (Baik, Sedang, Buruk)
+     * @return int Skor 0-100
      */
-    public function altitudeSuitabilityScore(float $altitudeValue): float
+    public function drainaseSuitabilityScore(?string $drainase): int
     {
-        $req = self::PLANT_REQUIREMENTS['altitude'];
-        $min = $req['min'];
-        $max = $req['max'];
-        $optimal = $req['optimal'];
-        
-        // Fungsi trapezoidal
-        if ($altitudeValue >= $min && $altitudeValue <= $max) {
-            // Di dalam rentang ideal: gunakan Gaussian di sekitar optimal
-            $range = $max - $min;
-            $sigma = $range / 3;
-            $distance = abs($altitudeValue - $optimal);
-            $exponent = -pow($distance, 2) / (2 * pow($sigma, 2));
-            $score = 100 * exp($exponent);
-        } elseif ($altitudeValue < $min) {
-            // Di bawah rentang: linear decay
-            $distance = $min - $altitudeValue;
-            $score = 100 * max(0, 1 - $distance / 200); // 200m tolerance di bawah
-        } else {
-            // Di atas rentang: linear decay
-            $distance = $altitudeValue - $max;
-            $score = 100 * max(0, 1 - $distance / 300); // 300m tolerance di atas
+        if ($drainase === null) {
+            return self::DRAINASE_SCORES['default'];
         }
-        
-        return max(0, min(100, $score));
+
+        return self::DRAINASE_SCORES[$drainase] ?? self::DRAINASE_SCORES['default'];
     }
 
     /**
@@ -265,7 +251,7 @@ class LandSuitabilityService
                 'pH Tanah' => $item['ph_suitability_score'],
                 'Kelembapan' => $item['humidity_suitability_score'],
                 'Suhu' => $item['temperature_suitability_score'],
-                'Ketinggian' => $item['altitude_suitability_score'],
+                'Drainase' => $item['drainase_suitability_score'],
                 default => 0,
             };
         })->toArray();
@@ -287,5 +273,14 @@ class LandSuitabilityService
     public function getSoilTypeScores(): array
     {
         return self::SOIL_TYPE_SCORES;
+    }
+
+    /**
+     * Get skor drainase
+     * Berguna untuk debugging atau display di UI
+     */
+    public function getDrainaseScores(): array
+    {
+        return self::DRAINASE_SCORES;
     }
 }

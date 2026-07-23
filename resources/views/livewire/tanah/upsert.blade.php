@@ -24,7 +24,12 @@
                     <flux:input label="pH Tanah" type="number" step="0.01" wire:model.defer="form.PH_Tanah" />
                     <flux:input label="Kelembaban Tanah (%)" type="number" step="0.01" wire:model.defer="form.Kelembaban_Tanah" />
                     <flux:input label="Suhu Tanah (°C)" type="number" step="0.01" wire:model.defer="form.Suhu_Tanah" />
-                    <flux:input label="Ketinggian Tanah (Mdpl)" type="number" step="0.01" wire:model.defer="form.Ketinggian_Tanah" />
+                    <flux:select label="Drainase" wire:model.defer="form.drainase">
+                        <option value="">Pilih</option>
+                        <option value="Baik">Baik</option>
+                        <option value="Sedang">Sedang</option>
+                        <option value="Buruk">Buruk</option>
+                    </flux:select>
                 </div>
             </div>
 

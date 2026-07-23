@@ -46,7 +46,7 @@
 ## 📋 Fitur yang Diimplementasikan
 
 ### Data Kriteria
-- ✅ Tampilkan 5 kriteria: Jenis Tanah, pH Tanah, Kelembapan, Suhu, Ketinggian
+- ✅ Tampilkan 5 kriteria: Jenis Tanah, pH Tanah, Kelembapan, Suhu, Drainase
 - ✅ Search untuk filter kriteria
 - ✅ Read-only (tidak ada tombol edit/delete/create)
 

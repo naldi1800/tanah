@@ -38,7 +38,7 @@ jenis_tanah
 ph
 kelembapan
 suhu
-ketinggian
+drainase
 alamat
 Kriteria
 
@@ -48,17 +48,17 @@ Jenis Tanah
 pH Tanah
 Kelembapan
 Suhu
-Ketinggian
+Drainase
 Matriks Perbandingan Kriteria
 
 Gunakan matriks berikut
 
-Kriteria	JT	PH	KL	SH	KT
+Kriteria	JT	PH	KL	SH	DR
 Jenis Tanah	1	5	5	7	7
 pH	1/5	1	3	5	5
 Kelembapan	1/5	1/3	1	3	3
 Suhu	1/7	1/5	1/3	1	2
-Ketinggian	1/7	1/5	1/3	1/2	1
+Drainase	1/7	1/5	1/3	1/2	1
 
 Alasan bobot
 
@@ -66,7 +66,7 @@ Jenis Tanah merupakan faktor paling penting.
 pH merupakan faktor kedua.
 Kelembapan merupakan faktor ketiga.
 Suhu merupakan faktor keempat.
-Ketinggian merupakan faktor pendukung.
+Drainase merupakan faktor pendukung.
 
 Gunakan matriks tersebut untuk menghitung bobot AHP.
 
@@ -147,7 +147,7 @@ Hitung statistik setiap jalan.
 
 Program harus menghasilkan
 
-|Jalan|Jumlah Titik|Jenis Dominan|Rata pH|Rata Kelembapan|Rata Suhu|Rata Ketinggian|
+|Jalan|Jumlah Titik|Jenis Dominan|Rata pH|Rata Kelembapan|Rata Suhu|Drainase Dominan|
 
 Jenis tanah menggunakan modus.
 
@@ -185,13 +185,11 @@ Rentang	Skor
 21–22 atau 33–34	3
 19–20	2
 lainnya	1
-Ketinggian
-Rentang	Skor
-700–2000 mdpl	5
-500–699	4
-300–499	3
-100–299	2
-lainnya	1
+Drainase
+Kategori	Skor
+Baik	3
+Sedang	2
+Buruk	1
 Langkah 4
 
 Hitung nilai akhir setiap jalan menggunakan bobot AHP.
@@ -218,7 +216,7 @@ Nilai Akhir
 
 +
 
-(Bobot Ketinggian × Skor Ketinggian)
+(Bobot Drainase × Skor Drainase)
 Langkah 5
 
 Urutkan nilai dari terbesar ke terkecil.

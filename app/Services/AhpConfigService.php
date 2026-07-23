@@ -19,7 +19,7 @@ class AhpConfigService
         'pH Tanah',
         'Kelembapan',
         'Suhu',
-        'Ketinggian',
+        'Drainase',
     ];
 
     /**
@@ -57,7 +57,7 @@ class AhpConfigService
         'pH Tanah' => 'PH_Tanah',
         'Kelembapan' => 'Kelembaban_Tanah',
         'Suhu' => 'Suhu_Tanah',
-        'Ketinggian' => 'Ketinggian_Tanah',
+        'Drainase' => 'drainase',
     ];
 
     /**
@@ -107,12 +107,12 @@ class AhpConfigService
      * Return format:
      * [
      *     [
+     *         'drainase_dominan' => 'Baik',
      *         'street' => 'Jln Anggrek',
      *         'jenis_dominan' => 'Lempung',
      *         'avg_ph' => 6.77,
      *         'avg_kelembapan' => 80.33,
      *         'avg_suhu' => 28.00,
-     *         'avg_ketinggian' => 112.33,
      *     ],
      *     ...
      * ]
@@ -131,7 +131,7 @@ class AhpConfigService
                 'avg_ph' => $group->avg('PH_Tanah'),
                 'avg_kelembapan' => $group->avg('Kelembaban_Tanah'),
                 'avg_suhu' => $group->avg('Suhu_Tanah'),
-                'avg_ketinggian' => $group->avg('Ketinggian_Tanah'),
+                'drainase_dominan' => $this->calculateModusDrainase($group),
             ];
         })->values();
     }
@@ -151,6 +151,23 @@ class AhpConfigService
         $dominantId = $countById->sortDesc()->keys()->first();
 
         return $plucked->firstWhere('id', $dominantId)?->jenis ?? null;
+    }
+
+    /**
+     * Hitung modus untuk drainase dari group data
+     */
+    protected function calculateModusDrainase(Collection $group): ?string
+    {
+        $drainaseValues = $group->pluck('drainase')->filter();
+
+        if ($drainaseValues->isEmpty()) {
+            return null;
+        }
+
+        $countByValue = $drainaseValues->countBy();
+        $dominantValue = $countByValue->sortDesc()->keys()->first();
+
+        return $dominantValue;
     }
 
     /**

@@ -156,13 +156,13 @@ class AhpRecommendationService
         };
     }
 
-    public function ketinggianScore(float $value): int
+    public function drainaseScore(string $value): int
     {
-        return match (true) {
-            $value >= 700 && $value <= 2000 => 5,
-            $value >= 500 && $value <= 699 => 4,
-            $value >= 300 && $value <= 499 => 3,
-            $value >= 100 && $value <= 299 => 2,
+        // Mapping ordinal: Baik = 3, Sedang = 2, Buruk = 1
+        return match (trim(strtolower($value))) {
+            'baik' => 3,
+            'sedang' => 2,
+            'buruk' => 1,
             default => 1,
         };
     }
@@ -175,14 +175,14 @@ class AhpRecommendationService
         $phScore = $this->phScore((float) $stats['avg_ph']);
         $kelembapanScore = $this->kelembapanScore((float) $stats['avg_kelembapan']);
         $suhuScore = $this->suhuScore((float) $stats['avg_suhu']);
-        $ketinggianScore = $this->ketinggianScore((float) $stats['avg_ketinggian']);
+        $drainaseScore = $this->drainaseScore($stats['drainase_dominan'] ?? 'Buruk');
 
         $score = (
             ($this->criteriaWeights['Jenis Tanah'] ?? 0.0) * $jenisScore +
             ($this->criteriaWeights['pH Tanah'] ?? 0.0) * $phScore +
             ($this->criteriaWeights['Kelembapan'] ?? 0.0) * $kelembapanScore +
             ($this->criteriaWeights['Suhu'] ?? 0.0) * $suhuScore +
-            ($this->criteriaWeights['Ketinggian'] ?? 0.0) * $ketinggianScore
+            ($this->criteriaWeights['Drainase'] ?? 0.0) * $drainaseScore
         );
 
         return array_merge($stats, [
@@ -190,7 +190,7 @@ class AhpRecommendationService
             'ph_score' => $phScore,
             'kelembapan_score' => $kelembapanScore,
             'suhu_score' => $suhuScore,
-            'ketinggian_score' => $ketinggianScore,
+            'drainase_score' => $drainaseScore,
             'total_score' => round($score, 4),
         ]);
     }
@@ -219,7 +219,7 @@ class AhpRecommendationService
                     'pH Tanah' => $s['avg_ph'],
                     'Kelembapan' => $s['avg_kelembapan'],
                     'Suhu' => $s['avg_suhu'],
-                    'Ketinggian' => $s['avg_ketinggian'],
+                    'Drainase' => $this->drainaseScore($s['drainase_dominan'] ?? 'Buruk'),
                     default => 0,
                 };
             })->toArray();
@@ -416,7 +416,7 @@ class AhpRecommendationService
                     'pH Tanah' => $item['ph_suitability_score'],
                     'Kelembapan' => $item['humidity_suitability_score'],
                     'Suhu' => $item['temperature_suitability_score'],
-                    'Ketinggian' => $item['altitude_suitability_score'],
+                    'Drainase' => $item['drainase_suitability_score'],
                     default => 0,
                 };
             })->toArray();

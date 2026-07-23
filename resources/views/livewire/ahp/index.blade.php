@@ -50,7 +50,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">pH</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Kelembapan</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Suhu</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Ketinggian</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Drainase</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -61,13 +61,13 @@
                                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->PH_Tanah, 2) }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Kelembaban_Tanah, 2) }}%</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Suhu_Tanah, 2) }}°C</td>
-                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ number_format($tanah->Ketinggian_Tanah, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $tanah->drainase ?? '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Keterangan: Tabel menampilkan titik pengamatan data tanah asli dengan atribut seperti alamat, jenis tanah (relasi `jenisTanah`), dan pengukuran pH, kelembapan, suhu, dan ketinggian dari basis data.</p>
+                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Keterangan: Tabel menampilkan titik pengamatan data tanah asli dengan atribut seperti alamat, jenis tanah (relasi `jenisTanah`), dan pengukuran pH, kelembapan, suhu, dan drainase dari basis data.</p>
             </section>
 
             <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -247,7 +247,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor pH</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Kelembapan</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Suhu</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Ketinggian</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Skor Drainase</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Total Skor</th>
                             </tr>
                         </thead>
@@ -260,14 +260,14 @@
                                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['ph_score'] }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['kelembapan_score'] }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['suhu_score'] }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['ketinggian_score'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $stats['drainase_score'] }}</td>
                                     <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">{{ number_format($stats['total_score'], 4) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Keterangan: Skor masing-masing atribut (Jenis, pH, Kelembapan, Suhu, Ketinggian) dihitung dengan fungsi pemetaan menjadi skala 1–5 berdasarkan nilai rata-rata jalan tersebut. Total Skor adalah jumlah bobot kriteria dikalikan skor atribut masing-masing (menggunakan bobot dari tabel bobot kriteria).</p>
+                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Keterangan: Skor masing-masing atribut (Jenis, pH, Kelembapan, Suhu, Drainase) dihitung dengan fungsi pemetaan menjadi skala 1–5 berdasarkan nilai rata-rata jalan tersebut. Total Skor adalah jumlah bobot kriteria dikalikan skor atribut masing-masing (menggunakan bobot dari tabel bobot kriteria).</p>
             </section>
 
             {{-- Per-criterion AHP reports --}}

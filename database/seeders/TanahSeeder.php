@@ -14,7 +14,7 @@ class TanahSeeder extends Seeder
     public function run(): void
     {
         Tanah::truncate();
-        $csvFile = fopen(base_path('database/csv/tanah.csv'), 'r');
+        $csvFile = fopen(base_path('database/csv/tanah2.csv'), 'r');
         $header = fgetcsv($csvFile);
         if ($header !== false) {
             // Menghilangkan UTF-8 BOM jika ada

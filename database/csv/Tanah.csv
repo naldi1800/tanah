@@ -1,20 +1,20 @@
-﻿alamat,jenis_tanah_id,PH_Tanah,Kelembaban_Tanah,Suhu_Tanah,Ketinggian_Tanah
-Jl. Kopi 1,1,5.5,75,25,800
-Jl. Kopi 2,1,5.7,77,27,801
-Jl. Kopi 3,1,5.8,78,29,803
-Jl. Kopi 4,1,6.1,80,30,804
-Jl. Kopi 5,1,6.3,82,31,805
-Jl. Kopi 6,1,6.5,85,32,807
-Jl. Kopi 7,1,6.8,87,33,809
-Jl. Kopi 8,1,7.0,90,35,810
-Jl. Tammabili 1,2,5.0,64,18,901
-Jl. Tammabili 2,2,5.2,66,19,903
-Jl. Tammabili 3,2,5.4,67,15,904
-Jl. Tammabili 4,2,7.1,69,17,905
-Jl. Tammabili 5,2,7.4,70,18,907
-Jl. Tammabili 6,2,7.5,71,20,909
-Jl. Tammabili 7,2,7.8,72,21,911
-Jl. Tammabili 8,2,8.0,73,23,912
-Jl. Tammabili 9,2,8.5,74,24,914
-Jl. Kayu taning 1,3,4.5,60,12,1015
-Jl. Kayu taning 2,3,4.8,62,10,1018
+﻿alamat,jenis_tanah_id,PH_Tanah,Kelembaban_Tanah,Suhu_Tanah,drainase
+Jl. Kopi 1,1,5.5,75,25,Baik
+Jl. Kopi 2,1,5.7,77,27,Baik
+Jl. Kopi 3,1,5.8,78,29,Baik
+Jl. Kopi 4,1,6.1,80,30,Baik
+Jl. Kopi 5,1,6.3,82,31,Baik
+Jl. Kopi 6,1,6.5,85,32,Baik
+Jl. Kopi 7,1,6.8,87,33,Baik
+Jl. Kopi 8,1,7.0,90,35,Sedang
+Jl. Tammabili 1,2,5.0,64,18,Sedang
+Jl. Tammabili 2,2,5.2,66,19,Sedang
+Jl. Tammabili 3,2,5.4,67,15,Sedang
+Jl. Tammabili 4,2,7.1,69,17,Buruk
+Jl. Tammabili 5,2,7.4,70,18,Buruk
+Jl. Tammabili 6,2,7.5,71,20,Buruk
+Jl. Tammabili 7,2,7.8,72,21,Buruk
+Jl. Tammabili 8,2,8.0,73,23,Buruk
+Jl. Tammabili 9,2,8.5,74,24,Buruk
+Jl. Kayu taning 1,3,4.5,60,12,Buruk
+Jl. Kayu taning 2,3,4.8,62,10,Buruk
