@@ -451,6 +451,44 @@
                 </div>
             </section>
 
+            {{-- Calculation Breakdown Section --}}
+            <section class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mt-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Perhitungan Manual Metode AHP</h2>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Berikut adalah contoh perhitungan nilai akhir alternatif melalui penjumlahan hasil perkalian bobot prioritas kriteria dengan bobot prioritas alternatif.</p>
+                
+                <div class="mt-6 space-y-8">
+                    @foreach (($recommendation['calculation_breakdown'] ?? []) as $index => $breakdown)
+                        <div class="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ $index + 1 }}. {{ $breakdown['nama'] }}</h3>
+                            
+                            <div class="font-mono text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                                <div class="text-gray-900 dark:text-white font-semibold">Nilai Akhir {{ $breakdown['nama'] }}</div>
+                                <div>=</div>
+                                
+                                @foreach ($breakdown['perhitungan'] as $step)
+                                    @if ($loop->first)
+                                        <div>({{ number_format($step['bobot_kriteria'], 4) }} × {{ number_format($step['bobot_alternatif'], 4) }})</div>
+                                    @else
+                                        <div>+ ({{ number_format($step['bobot_kriteria'], 4) }} × {{ number_format($step['bobot_alternatif'], 4) }})</div>
+                                    @endif
+                                @endforeach
+                                
+                                <div>= {{ number_format($breakdown['total'], 4) }}</div>
+                            </div>
+                            
+                            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    <span class="font-semibold">Keterangan:</span> 
+                                    @foreach ($breakdown['perhitungan'] as $step)
+                                        {{ $step['kriteria'] }} = {{ number_format($step['hasil'], 4) }}{{ !$loop->last ? ', ' : '' }}
+                                    @endforeach
+                                </p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
 			</div>
         </div>
     </div>

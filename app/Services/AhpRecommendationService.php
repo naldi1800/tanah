@@ -272,7 +272,53 @@ class AhpRecommendationService
             'evaluated_streets' => $this->evaluatedStreets(),
             'per_criterion' => $perCriterionReports,
             'ahp_final_ranking' => $finalScores,
+            'calculation_breakdown' => $this->formatCalculationBreakdown($finalScores, $perCriterionReports),
         ];
+    }
+
+    /**
+     * Format calculation breakdown for display in view
+     * Shows the step-by-step calculation for top 5 alternatives
+     */
+    public function formatCalculationBreakdown(array $finalScores, array $perCriterionReports): array
+    {
+        // Take top 5 alternatives
+        $topAlternatives = array_slice($finalScores, 0, 5, true);
+
+        $breakdown = [];
+
+        foreach ($topAlternatives as $item) {
+            $street = $item['street'];
+            $totalScore = $item['score'];
+            $contributions = $item['contributions'] ?? [];
+
+            $steps = [];
+
+            foreach ($this->criteriaWeights as $criterion => $criteriaWeight) {
+                $altPriority = $perCriterionReports[$criterion]['report']['priorityVector'] ?? [];
+                $altIndex = array_search($street, $perCriterionReports[$criterion]['labels'] ?? []);
+                
+                if ($altIndex !== false && isset($altPriority[$altIndex])) {
+                    $alternativeWeight = $altPriority[$altIndex];
+                    $contribution = $contributions[$criterion] ?? 0.0;
+
+                    $steps[] = [
+                        'kriteria' => $criterion,
+                        'bobot_kriteria' => round($criteriaWeight, 4),
+                        'bobot_alternatif' => round($alternativeWeight, 4),
+                        'hasil' => round($contribution, 4),
+                    ];
+                }
+            }
+
+            $breakdown[] = [
+                'nama' => $street,
+                'perhitungan' => $steps,
+                'total' => round($totalScore, 4),
+            ];
+        }
+
+        return $breakdown;
     }
 
     /**
